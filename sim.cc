@@ -14,6 +14,9 @@
     argv[2] = "8192"
     ... and so on
 */
+
+
+
 int main (int argc, char *argv[]) {
    FILE *fp;			// File pointer.
    char *trace_file;		// This variable holds the trace file name.
@@ -72,6 +75,7 @@ int main (int argc, char *argv[]) {
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.
       ///////////////////////////////////////////////////////
+      Cache cache1 = Cache(params);
     }
 
     return(0);

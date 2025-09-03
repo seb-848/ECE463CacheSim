@@ -17,9 +17,20 @@ struct {
 // cache class
 class Cache {
    public:
+   // Member Variables
    cache_params_t parameters;
 
    // Constructor
+   Cache() {
+      parameters.BLOCKSIZE = 0;
+      parameters.L1_SIZE = 0;
+      parameters.L1_ASSOC = 0;
+      parameters.L2_SIZE = 0;
+      parameters.L2_ASSOC = 0;
+      parameters.PREF_N = 0;
+      parameters.PREF_M = 0;
+   }
+   
    Cache(cache_params_t param) {
       parameters.BLOCKSIZE = param.BLOCKSIZE;
       parameters.L1_SIZE = param.L1_SIZE;

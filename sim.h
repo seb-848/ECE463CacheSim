@@ -1,6 +1,7 @@
 #ifndef SIM_CACHE_H
 #define SIM_CACHE_H
 
+#include <cstdint>
 typedef 
 struct {
    uint32_t BLOCKSIZE;
@@ -42,7 +43,7 @@ Class Cache {
    }
 
    // Destructor
-   //~Cache();
+   Cache::~Cache();
 };
 
 Class Set {

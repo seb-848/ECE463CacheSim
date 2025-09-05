@@ -15,7 +15,7 @@ struct {
 // Put additional data structures here as per your requirement.
 
 // cache class
-class Cache {
+Class Cache {
    public:
    // Member Variables
    cache_params_t parameters;
@@ -42,6 +42,14 @@ class Cache {
    }
 
    // Destructor
-   ~Cache();
-}
+   //~Cache();
+};
+
+Class Set {
+   public:
+   Set(Cache cachex) {
+      set
+   }
+
+};
 #endif

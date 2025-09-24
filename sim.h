@@ -2,6 +2,11 @@
 #define SIM_CACHE_H
 
 #include <cstdint>
+#include <cmath>
+#include <vector>
+
+const uint32_t ADDRESS_SIZE = 32;
+
 typedef 
 struct {
    uint32_t BLOCKSIZE;
@@ -16,41 +21,77 @@ struct {
 // Put additional data structures here as per your requirement.
 
 // cache class
-Class Cache {
+// typedef struct {
+   
+// }
+
+class Mem_Space {
+   public:
+   bool dirty;
+   bool valid;
+
+   Mem_Space() {
+      dirty = false;
+      valid = false;
+   }
+
+   Mem_Space(bool dbit, bool vbit) {
+      this->dirty = dbit;
+      this->valid = vbit;
+   }
+};
+
+//Cache
+class Cache {
    public:
    // Member Variables
-   cache_params_t parameters;
+   uint32_t BLOCKSIZE;
+   uint32_t SIZE;
+   uint32_t ASSOC;
+   uint32_t nums_sets;
+   uint32_t nums_tag;
+   uint32_t nums_index;
+   uint32_t nums_block_offset;
 
    // Constructor
    Cache() {
-      parameters.BLOCKSIZE = 0;
-      parameters.L1_SIZE = 0;
-      parameters.L1_ASSOC = 0;
-      parameters.L2_SIZE = 0;
-      parameters.L2_ASSOC = 0;
-      parameters.PREF_N = 0;
-      parameters.PREF_M = 0;
+      BLOCKSIZE = 0;
+      SIZE = 0;
+      ASSOC = 0;
+      nums_sets = 0;
+      nums_index = 0;
    }
    
-   Cache(cache_params_t param) {
-      parameters.BLOCKSIZE = param.BLOCKSIZE;
-      parameters.L1_SIZE = param.L1_SIZE;
-      parameters.L1_ASSOC = param.L1_ASSOC;
-      parameters.L2_SIZE = param.L2_SIZE;
-      parameters.L2_ASSOC = param.L2_ASSOC;
-      parameters.PREF_N = param.PREF_N;
-      parameters.PREF_M = param.PREF_M;
+   Cache(uint32_t inputBlocksize, uint32_t inputSize, uint32_t inputAssoc) {
+      this->BLOCKSIZE = inputBlocksize;
+      this->SIZE = inputSize;
+      this->ASSOC = inputAssoc;
+      this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);
+      this->nums_index = log2(nums_sets);
+      this->nums_block_offset = log2(BLOCKSIZE);
+      this->nums_tag = ADDRESS_SIZE - nums_index - nums_block_offset;
    }
+   
 
    // Destructor
-   Cache::~Cache();
+   //Cache::~Cache();
 };
 
-Class Set {
+class Set {
    public:
-   Set(Cache cachex) {
-      set
+   vector<vector<Mem_Space>> sets;
+
+   Set(Cache LX) {
+      
    }
 
 };
+
+// Class Set {
+//    public:
+//    Set(Cache cachex) {
+//       set
+//    }
+
+// };
 #endif

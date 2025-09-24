@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -14,7 +15,6 @@
     argv[2] = "8192"
     ... and so on
 */
-
 
 
 int main (int argc, char *argv[]) {
@@ -75,7 +75,13 @@ int main (int argc, char *argv[]) {
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.
       ///////////////////////////////////////////////////////
-      Cache cache1 = Cache(params);
+      Cache L1 = Cache(params.BLOCKSIZE, params.L1_SIZE, params.L1_ASSOC);
+      printf("%d\n%d\n%d\n",L1.BLOCKSIZE, L1.SIZE, L1.ASSOC);
+
+      if (params.L2_ASSOC > 0 && params.L2_SIZE > 0) {
+         Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+         printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
+      }
     }
 
     return(0);

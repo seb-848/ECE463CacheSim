@@ -16,6 +16,19 @@
     ... and so on
 */
 
+// write back write allocate
+void command(Cache LX, Address address, char read_write) {
+   switch (read_write) {
+      case 'r':
+      
+      break;
+      case 'w':
+      break;
+      default:
+      break;
+   }
+}
+
 
 int main (int argc, char *argv[]) {
    FILE *fp;			// File pointer.

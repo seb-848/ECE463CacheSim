@@ -1,6 +1,7 @@
 #ifndef SIM_CACHE_H
 #define SIM_CACHE_H
 
+#include <cstddef>
 #include <cstdint>
 #include <cmath>
 #include <vector>
@@ -60,6 +61,7 @@ class Cache {
    uint32_t nums_block_offset;
    std::vector<std::vector<Mem_Space>> sets;
    Mem_Space default_block = Mem_Space(false, false, 0, 0);
+   Cache* next_cache;
 
    // Constructor
    Cache() {
@@ -68,6 +70,7 @@ class Cache {
       ASSOC = 0;
       nums_sets = 0;
       nums_index = 0;
+      next_cache = NULL;
    }
    
    Cache(uint32_t inputBlocksize, uint32_t inputSize, uint32_t inputAssoc) {
@@ -78,6 +81,7 @@ class Cache {
       this->nums_index = log2(nums_sets);
       this->nums_block_offset = log2(BLOCKSIZE);
       this->nums_tag = ADDRESS_SIZE - nums_index - nums_block_offset;
+      default_block.LRU = this->ASSOC;
 
       sets.assign(this->nums_sets, std::vector<Mem_Space>(this->ASSOC, default_block));
    }

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "sim.h"
-#include <algorithm>
 
 /*  "argc" holds the number of command-line arguments.
     "argv[]" holds the arguments themselves.
@@ -24,6 +23,21 @@ const char WRITE_HIT = '1';
 const char READ_HIT = '2';
 const char WRITE_MISS = '3';
 const char READ_MISS = '4';
+int L1_read = 0;
+int L1_read_miss = 0;
+int L1_write = 0;
+int L1_write_miss = 0;
+int L1_miss_rate = 0;
+int L1_write_back = 0;
+int L1_prefetches = 0;
+int L2_read = 0;
+int L2_read_miss = 0;
+int L2_write = 0;
+int L2_write_miss = 0;
+int L2_miss_rate = 0;
+int L2_write_back = 0;
+int L2_prefetches = 0;
+
 
 // compare for lru_update
 // bool compare_lru(, Mem_Space addr2) {
@@ -51,31 +65,44 @@ const char READ_MISS = '4';
 //    // }
 // }
 
+void update_lru(Cache &LX, uint32_t index, int prev) {
+   for (int i = 0; i < LX.ASSOC; i++) {
+      if (LX.sets[index][i].LRU < prev) LX.sets[index][i].LRU++;
+      else if (LX.sets[index][i].LRU == prev) LX.sets[index][i].LRU = 0;
+   }
+}
 
 uint32_t find_MRU(Cache LX, uint32_t index) {
+   uint32_t max = 0;
+   uint32_t element = 0;
+   for (int i = 0; i < LX.ASSOC; i++) {
+      if (LX.sets[index][i].LRU > max) {
+         max = LX.sets[index][i].LRU;
+         element = i;
+      }
+   }
+   return element;
+}
 
-} 
+void eviction(Cache LX, uint32_t address) {
+   
+}
+
 // write back write allocate
 uint32_t write_command(Cache &LX, uint32_t address, char read_write) {
    uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
    uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
    int prev_lru = 0;
+   //uint32_t MRU
+
    for (int i = 0; i < LX.ASSOC; i++) {
       if (LX.sets[index][i].value == address) {
-         // switch(read_write) {
-         //    case READ_COM:
-         //    read_write = READ_HIT;
-         //    break;
-            // case WRITE_COM:
-            read_write = WRITE_HIT;
-            Mem_Space addr = Mem_Space(false, true, address, 0);
-            Mem_Space temp = LX.sets[index][0];
-            LX.sets[index][0] = addr;
-            temp.LRU = i;
-            LX.sets[index][i] = temp;
-            return LX.sets[index][0].value;
-         //    break;
-         // }
+         prev_lru = i;
+         update_lru(LX, index, prev_lru);
+         LX.sets[index][i].valid = true;
+         LX.sets[index][i].dirty = true;
+         LX.sets[index][i].value = address;
+         return LX.sets[index][i].value;
       }
    }
 
@@ -83,69 +110,104 @@ uint32_t write_command(Cache &LX, uint32_t address, char read_write) {
       write_command(*LX.next_cache, address, read_write);
    }
    else {
-      // last level
+      uint32_t MRU = find_MRU(LX, index);
+      uint32_t MRU_address = LX.sets[index][MRU].value;
+      LX.sets[index][MRU].dirty = true;
+      LX.sets[index][MRU].valid = true;
+      LX.sets[index][MRU].value = address;
+      LX.sets[index][MRU].LRU = 0;
+      return MRU_address;
    }
-
-
 
    
 
+   // switch (read_write) {
+   //    case READ_COM:
+   //    read_write = READ_MISS;
+   //    return false;
+   //    break;
+   //    case WRITE_COM:
+   //    read_write = WRITE_MISS;
+   //    return false;
+   //    break;
+   //    case WRITE_HIT:
+   //    // L1
+   //    for (int i = 0; i < LX.ASSOC; i++) {
+   //       if (LX.sets[index][i].value == tag) {
+   //          Mem_Space addr = Mem_Space(false, true, tag, 0);
+   //          Mem_Space temp = LX.sets[index][0];
+   //          LX.sets[index][0] = addr;
+   //          temp.LRU = i;
+   //          LX.sets[index][i] = temp;
+   //          return true;
+   //       }
+   //    }
+   //    break;
+   //    case READ_HIT:
+   //    // do nothing if hit in L1
+   //    return true;
+   //    break;
+   //    default:
+   //    break;
+   // }
 
-   switch (read_write) {
-      case READ_COM:
-      read_write = READ_MISS;
-      return false;
-      break;
-      case WRITE_COM:
-      read_write = WRITE_MISS;
-      return false;
-      break;
-      case WRITE_HIT:
-      // L1
-      for (int i = 0; i < LX.ASSOC; i++) {
-         if (LX.sets[index][i].value == tag) {
-            Mem_Space addr = Mem_Space(false, true, tag, 0);
-            Mem_Space temp = LX.sets[index][0];
-            LX.sets[index][0] = addr;
-            temp.LRU = i;
-            LX.sets[index][i] = temp;
-            return true;
-         }
-      }
-      break;
-      case READ_HIT:
-      // do nothing if hit in L1
-      return true;
-      break;
-      default:
-      break;
-   }
-
-   switch (read_write) {
-      case READ_COM:
-      break;
-      case WRITE_COM:
-      // for (int i = 0; i < LX.ASSOC; i++) {
-      //    if (LX.sets[index][i].valid != false) {
-      //       read_write = WRITE_COM;
-      //       break;
-      //    }
-      //    read_write = EMPTY_SET;
-      // }
-      for (int i = 0; i < LX.ASSOC; i++) {
-         if (LX.sets[index][i].value == tag) {
-            Mem_Space addr = Mem_Space(false, true, tag, 0);
-            Mem_Space temp = LX.sets[index][0];
-            LX.sets[index][0] = addr;
-            temp.LRU = i;
-            LX.sets[index][i] = temp;
-         }
-      }
-      break;
-      default:
-      break;
-   }
+   // switch (read_write) {
+   //    case READ_COM:
+   //    break;
+   //    case WRITE_COM:
+   //    // for (int i = 0; i < LX.ASSOC; i++) {
+   //    //    if (LX.sets[index][i].valid != false) {
+   //    //       read_write = WRITE_COM;
+   //    //       break;
+   //    //    }
+   //    //    read_write = EMPTY_SET;
+   //    // }
+   //    for (int i = 0; i < LX.ASSOC; i++) {
+   //       if (LX.sets[index][i].value == tag) {
+   //          Mem_Space addr = Mem_Space(false, true, tag, 0);
+   //          Mem_Space temp = LX.sets[index][0];
+   //          LX.sets[index][0] = addr;
+   //          temp.LRU = i;
+   //          LX.sets[index][i] = temp;
+   //       }
+   //    }
+   //    break;
+   //    default:
+   //    break;
+   // }
    return 1;
+}
+
+uint32_t read_command(Cache &LX, uint32_t address) {
+   uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
+   uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
+   int prev_lru = 0;
+
+   for (int i = 0; i < LX.ASSOC; i++) {
+      if (LX.sets[index][i].value == address) {
+         prev_lru = i;
+         update_lru(LX, index, prev_lru);
+         if (LX.next_cache == NULL) {
+            L2_read++;
+            L1_read_miss++;
+            LX.sets[index][i].dirty = false;
+         }
+         else {
+            L1_read++;
+         }
+         return address;
+      }
+   }
+
+   if (LX.next_cache != NULL) {
+      read_command(*LX.next_cache, address);
+
+   }
+   else {
+      L2_read_miss++;
+      uint32_t MRU = find_MRU(LX, index);
+      
+   }
 }
 
 
@@ -204,8 +266,11 @@ int main (int argc, char *argv[]) {
 
    // Read requests from the trace file and echo them back.
    while (fscanf(fp, "%c %x\n", &rw, &addr) == 2) {	// Stay in the loop if fscanf() successfully parsed two tokens as specified.
-      if (rw == 'r')
+      if (rw == 'r') {
          printf("r %x\n", addr);
+         read_command(L1,addr);
+      }
+         
       else if (rw == 'w')
          printf("w %x\n", addr);
       else {
@@ -219,5 +284,9 @@ int main (int argc, char *argv[]) {
       
     }
 
+    printf("L1 read: %d\n", L1_read);
+    printf("L1 read miss: %d\n", L1_read_miss);
+    printf("L2 read: %d\n", L2_read);
+    printf("L2 read miss: %d\n", L2_read_miss);
     return(0);
 }

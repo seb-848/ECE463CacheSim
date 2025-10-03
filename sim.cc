@@ -65,7 +65,12 @@ int L2_prefetches = 0;
 //    // }
 // }
 
-void update_lru(Cache &LX, uint32_t index, int prev) {
+void update_lru(Cache &LX, uint32_t index, int prev, uint32_t addr = 0) {
+   if (prev < 0) {
+      for (int i = 0; i < LX.ASSOC; i++) {
+         if (LX.sets[index][i].value != addr) LX.sets[index][i].LRU++;
+      }
+   }
    for (int i = 0; i < LX.ASSOC; i++) {
       if (LX.sets[index][i].LRU < prev) LX.sets[index][i].LRU++;
       else if (LX.sets[index][i].LRU == prev) LX.sets[index][i].LRU = 0;
@@ -93,88 +98,41 @@ uint32_t write_command(Cache &LX, uint32_t address, char read_write) {
    uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
    uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
    int prev_lru = 0;
-   //uint32_t MRU
+   uint32_t res_addr = address;
 
    for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].value == address) {
+      if (LX.sets[index][i].value == tag) {
          prev_lru = i;
          update_lru(LX, index, prev_lru);
-         LX.sets[index][i].valid = true;
-         LX.sets[index][i].dirty = true;
-         LX.sets[index][i].value = address;
-         return LX.sets[index][i].value;
+         if (LX.next_cache == NULL) {
+            L2_write++;
+            L1_write_miss++;
+         }
+         else {
+            L1_write++;
+            LX.sets[index][i].dirty = true;
+            LX.sets[index][i].valid = true;
+            LX.sets[index][i].value = tag;
+         }
+         return address;
       }
    }
 
    if (LX.next_cache != NULL) {
-      write_command(*LX.next_cache, address, read_write);
+      res_addr = write_command(*LX.next_cache, address, read_write);
+      if (res_addr == address) {
+         uint32_t MRU = find_MRU(LX, index);
+         uint32_t MRU_address = LX.sets[index][MRU].value;
+         
+         LX.sets[index][MRU].value = tag;
+         LX.sets[index][MRU].valid = true;
+         LX.sets[index][MRU].dirty = true;
+         prev_lru = -1;
+         update_lru(LX, index, prev_lru);
+         return MRU_address;
+      }
    }
-   else {
-      uint32_t MRU = find_MRU(LX, index);
-      uint32_t MRU_address = LX.sets[index][MRU].value;
-      LX.sets[index][MRU].dirty = true;
-      LX.sets[index][MRU].valid = true;
-      LX.sets[index][MRU].value = address;
-      LX.sets[index][MRU].LRU = 0;
-      return MRU_address;
-   }
 
-   
-
-   // switch (read_write) {
-   //    case READ_COM:
-   //    read_write = READ_MISS;
-   //    return false;
-   //    break;
-   //    case WRITE_COM:
-   //    read_write = WRITE_MISS;
-   //    return false;
-   //    break;
-   //    case WRITE_HIT:
-   //    // L1
-   //    for (int i = 0; i < LX.ASSOC; i++) {
-   //       if (LX.sets[index][i].value == tag) {
-   //          Mem_Space addr = Mem_Space(false, true, tag, 0);
-   //          Mem_Space temp = LX.sets[index][0];
-   //          LX.sets[index][0] = addr;
-   //          temp.LRU = i;
-   //          LX.sets[index][i] = temp;
-   //          return true;
-   //       }
-   //    }
-   //    break;
-   //    case READ_HIT:
-   //    // do nothing if hit in L1
-   //    return true;
-   //    break;
-   //    default:
-   //    break;
-   // }
-
-   // switch (read_write) {
-   //    case READ_COM:
-   //    break;
-   //    case WRITE_COM:
-   //    // for (int i = 0; i < LX.ASSOC; i++) {
-   //    //    if (LX.sets[index][i].valid != false) {
-   //    //       read_write = WRITE_COM;
-   //    //       break;
-   //    //    }
-   //    //    read_write = EMPTY_SET;
-   //    // }
-   //    for (int i = 0; i < LX.ASSOC; i++) {
-   //       if (LX.sets[index][i].value == tag) {
-   //          Mem_Space addr = Mem_Space(false, true, tag, 0);
-   //          Mem_Space temp = LX.sets[index][0];
-   //          LX.sets[index][0] = addr;
-   //          temp.LRU = i;
-   //          LX.sets[index][i] = temp;
-   //       }
-   //    }
-   //    break;
-   //    default:
-   //    break;
-   // }
    return 1;
 }
 
@@ -182,15 +140,17 @@ uint32_t read_command(Cache &LX, uint32_t address) {
    uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
    uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
    int prev_lru = 0;
+   uint32_t res_addr = address;
 
    for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].value == address) {
+      if (LX.sets[index][i].value == tag) {
          prev_lru = i;
          update_lru(LX, index, prev_lru);
          if (LX.next_cache == NULL) {
             L2_read++;
             L1_read_miss++;
             LX.sets[index][i].dirty = false;
+            LX.sets[index][i].value = tag;
          }
          else {
             L1_read++;
@@ -200,14 +160,39 @@ uint32_t read_command(Cache &LX, uint32_t address) {
    }
 
    if (LX.next_cache != NULL) {
-      read_command(*LX.next_cache, address);
-
-   }
-   else {
-      L2_read_miss++;
-      uint32_t MRU = find_MRU(LX, index);
+      res_addr = read_command(*LX.next_cache, address);
+      if (res_addr == address) {
+         uint32_t MRU = find_MRU(LX, index);
+         uint32_t MRU_addr = LX.sets[index][MRU].value;
       
+         LX.sets[index][MRU].value = tag;
+         LX.sets[index][MRU].dirty = false;
+         LX.sets[index][MRU].valid = true;
+         prev_lru = -1;
+         update_lru(LX, index, prev_lru, address);
+         return 1;
+      }
    }
+
+   for (int i = 0; i < LX.ASSOC; i++) {
+      if (LX.sets[index][i].value == res_addr) {
+         LX.sets[index][i].dirty = false;
+      }
+   }
+
+   if (LX.next_cache == NULL) L2_read_miss++;
+   else L1_read_miss++;
+   uint32_t MRU = find_MRU(LX, index);
+   uint32_t MRU_addr = LX.sets[index][MRU].value;
+      
+   LX.sets[index][MRU].value = tag;
+   LX.sets[index][MRU].dirty = false;
+   LX.sets[index][MRU].valid = true;
+   LX.sets[index][MRU].LRU = 0;
+
+   prev_lru = -1;
+   update_lru(LX, index, prev_lru, address);
+   return MRU_addr;
 }
 
 

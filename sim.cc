@@ -277,7 +277,7 @@ int main (int argc, char *argv[]) {
          //printf("tag: %x lru: %d || tag: %x lru: %d || tag: %x lru: %d || tag: %x lru: %d ||",L2->sets[i][0].value,L2->sets[i][0].LRU,L2->sets[i][1].value,L2->sets[i][1].LRU,L2->sets[i][2].value,L2->sets[i][2].LRU,L2->sets[i][3].value,L2->sets[i][3].LRU);
          printf("set      %d:    ", i);
          for (uint32_t j = 0; j < L2->ASSOC; j++) {
-            printf("%x %d", L2->sets[i][j].value, L2->sets[i][j].LRU);
+            printf("%x", L2->sets[i][j].value);
             if (L2->sets[i][j].dirty) {
                printf(" D");
             }

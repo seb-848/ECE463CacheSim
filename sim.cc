@@ -31,22 +31,12 @@ bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
     }
 
 void update_lru(Cache* LX, uint32_t index, uint32_t prev, uint32_t addr = 0) {
-   //int flag = 0;
-   // if (prev < 0) {
-   //    for (uint32_t i = 0; i < LX->ASSOC; i++) {
-   //       if (LX->sets[index][i].value != addr) LX->sets[index][i].LRU++;
-   //    }
-   // }
    for (uint32_t i = 0; i < LX->ASSOC; i++) {
-      //if (LX->sets[index][i].LRU == LX->ASSOC) continue;
-      
       if (LX->sets[index][i].LRU < prev) {
          LX->sets[index][i].LRU++;
-         
       }
       else if (LX->sets[index][i].LRU == prev && LX->sets[index][i].value == addr) {
          LX->sets[index][i].LRU = 0;
-         //flag = -1;
       }
       
    }
@@ -73,9 +63,11 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
       // L1 or L2 hit
       if (LX->sets[index][i].value == tag) {
          if (write_back) {
+            printf("L2_write back");
             LX->sets[index][i].address = address;
             LX->sets[index][i].value = tag;
             LX->sets[index][i].dirty = true;
+            //if (read_write != READ_COM) LX->write++;
             return 1;
          }
          
@@ -84,6 +76,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             LX->read++;
          }
          else {
+            //if (LX->next_cache == nullptr) LX->read++;
             LX->sets[index][i].dirty = true;
             LX->write++;
          }
@@ -101,20 +94,22 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
          //reconstruct address
          LX->write_back++;
          write_back = true;
-         res_addr = command(LX->next_cache, LX->sets[index][MRU].address, read_write, write_back);
+         res_addr = command(LX->next_cache, LX->sets[index][MRU].address, WRITE_COM, write_back);
          //handle eviction for L1 dirty
       }
 
       write_back = false;
-      res_addr = command(LX->next_cache, address, read_write, write_back);
+      res_addr = command(LX->next_cache, address, READ_COM, write_back);
 
       if (res_addr == address) {
+         // LX->next_cache->read++;
          LX->sets[index][MRU].value = tag;
          LX->sets[index][MRU].address = address;
          if (read_write == READ_COM) {
             LX->sets[index][MRU].dirty = false;
             LX->read++;
             LX->read_miss++;
+            LX->next_cache->write++;
          }
          else {
             LX->sets[index][MRU].dirty = true;
@@ -134,6 +129,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    if (LX->sets[index][MRU].dirty && LX->next_cache == nullptr) {
       LX->write_back++;
       mem_traffic++;
+      //LX->read_miss++;
    }
 
    uint32_t MRU_addr = LX->sets[index][MRU].address;
@@ -142,15 +138,14 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
       LX->sets[index][MRU].dirty = false;
       LX->read++;
       LX->read_miss++;
+      if (LX->next_cache != nullptr) LX->next_cache->write++;
    }
    else {
       LX->sets[index][MRU].dirty = true;
       LX->write++;
       LX->write_miss++;
-      //printf("write miss");
    }
 
-   //LX->sets[index][MRU].dirty = false;
    if (LX->next_cache == nullptr) mem_traffic++;
 
    LX->sets[index][MRU].valid = true;
@@ -361,18 +356,18 @@ int main (int argc, char *argv[]) {
 
    // Read requests from the trace file and echo them back.
    while (fscanf(fp, "%c %x\n", &rw, &addr) == 2) {	// Stay in the loop if fscanf() successfully parsed two tokens as specified.
-   //    if (rw == 'r') {
-   //       printf("r %x\n", addr);
+      if (rw == 'r') {
+         printf("r %x\n", addr);
          
-   //       // printf("%d\n", read_command(*L1.next_cache,addr));
-   //    }
-   //    else if (rw == 'w') {
-   //        printf("w %x\n", addr);
-   //    }
-   //    else {
-   //       printf("Error: Unknown request type %c.\n", rw);
-	//  exit(EXIT_FAILURE);
-   //    }
+         // printf("%d\n", read_command(*L1.next_cache,addr));
+      }
+      else if (rw == 'w') {
+          printf("w %x\n", addr);
+      }
+      else {
+         printf("Error: Unknown request type %c.\n", rw);
+	 exit(EXIT_FAILURE);
+      }
 
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.

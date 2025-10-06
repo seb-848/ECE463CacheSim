@@ -119,7 +119,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
          // prev_lru = i;
          // update_lru(LX, index, prev_lru);
          if (write_back) {
-            printf("WRITEBACK");
+            //printf("WRITEBACK");
             LX->sets[index][i].address = address;
             LX->sets[index][i].dirty = true;
             return 1;
@@ -140,11 +140,11 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
 
    // write back and regular recursive call handled for L1 here
    uint32_t MRU = find_MRU(LX, index);
-   printf("CHECK FOR IF L1");
+   //printf("CHECK FOR IF L1");
    if (LX->next_cache != nullptr) {
-      printf("IN L1 still going to check dirty");
+      //printf("IN L1 still going to check dirty");
       if (LX->sets[index][MRU].dirty) {
-         printf("AT L1, MISS");
+         //printf("AT L1, MISS");
          //reconstruct address
          LX->write_back++;
          write_back = true;
@@ -167,7 +167,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             LX->sets[index][MRU].dirty = true;
             LX->write++;
             LX->write_miss++;
-            printf("write miss");
+            //printf("write miss");
          }
          LX->sets[index][MRU].LRU = 0;
 
@@ -179,6 +179,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
 
    // handle L2 write back and L2 miss here
    //either need to fetch from main memory
+   // add write back
    mem_traffic++;
    if (LX->sets[index][MRU].dirty) {
       LX->write_back++;

@@ -62,6 +62,13 @@ class Cache {
    std::vector<std::vector<Mem_Space>> sets;
    Mem_Space default_block = Mem_Space(false, false, 0, 0);
    Cache* next_cache;
+   int read;
+   int read_miss;
+   int write;
+   int write_miss;
+   int miss_rate;
+   int write_back;
+   int prefetches;
 
    // Constructor
    Cache() {
@@ -70,7 +77,15 @@ class Cache {
       ASSOC = 0;
       nums_sets = 0;
       nums_index = 0;
-      next_cache = NULL;
+      next_cache = nullptr;
+      read = 0;
+      read_miss = 0;
+      write = 0;
+      write_miss = 0;
+      miss_rate = 0;
+      write_back = 0;
+      prefetches = 0;
+
    }
    
    Cache(uint32_t inputBlocksize, uint32_t inputSize, uint32_t inputAssoc) {
@@ -82,6 +97,9 @@ class Cache {
       this->nums_block_offset = log2(BLOCKSIZE);
       this->nums_tag = ADDRESS_SIZE - nums_index - nums_block_offset;
       default_block.LRU = this->ASSOC;
+      this->next_cache = nullptr;
+      this->write = 0, this->write_back = 0, this->write_miss = 0;
+      this->read = 0, this->read_miss = 0, this->miss_rate = 0, this->prefetches = 0;
 
       sets.assign(this->nums_sets, std::vector<Mem_Space>(this->ASSOC, default_block));
    }

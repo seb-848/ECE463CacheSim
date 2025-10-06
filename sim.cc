@@ -23,178 +23,198 @@ const char WRITE_HIT = '1';
 const char READ_HIT = '2';
 const char WRITE_MISS = '3';
 const char READ_MISS = '4';
-int L1_read = 0;
-int L1_read_miss = 0;
-int L1_write = 0;
-int L1_write_miss = 0;
-int L1_miss_rate = 0;
-int L1_write_back = 0;
-int L1_prefetches = 0;
-int L2_read = 0;
-int L2_read_miss = 0;
-int L2_write = 0;
-int L2_write_miss = 0;
-int L2_miss_rate = 0;
-int L2_write_back = 0;
-int L2_prefetches = 0;
+int mem_traffic = 0;
+// int L1_read = 0;
+// int L1_read_miss = 0;
+// int L1_write = 0;
+// int L1_write_miss = 0;
+// int L1_miss_rate = 0;
+// int L1_write_back = 0;
+// int L1_prefetches = 0;
+// int L2_read = 0;
+// int L2_read_miss = 0;
+// int L2_write = 0;
+// int L2_write_miss = 0;
+// int L2_miss_rate = 0;
+// int L2_write_back = 0;
+// int L2_prefetches = 0;
 
-
-// compare for lru_update
-// bool compare_lru(, Mem_Space addr2) {
-//    return addr1.LRU < addr2.LRU;
-// }
-
-
-// LRU Update
-// void lru_update(Cache &LX, uint32_t index, int prev) {
-//    int update = 0;
-//    sort(LX.sets[index].begin(), LX.sets[index].end());
-//    for (int i = 1; i <= prev; i++) {
-//       lx.sets[index][i];
-//    }
-//    // for (int i = 0; i < LX.ASSOC; i++) {
-//    //    switch(update) {
-//    //       case 0:
-//    //       if (LX.sets[index][i].value == tag) {
-
-//    //       }
-//    //       break;
-//    //       case 1;
-//    //       break;
-//    //    }
-//    // }
-// }
-
-void update_lru(Cache &LX, uint32_t index, int prev, uint32_t addr = 0) {
+void update_lru(Cache* LX, uint32_t index, int prev, uint32_t addr = 0) {
    if (prev < 0) {
-      for (int i = 0; i < LX.ASSOC; i++) {
-         if (LX.sets[index][i].value != addr) LX.sets[index][i].LRU++;
+      for (uint32_t i = 0; i < LX->ASSOC; i++) {
+         if (LX->sets[index][i].value != addr) LX->sets[index][i].LRU++;
       }
    }
-   for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].LRU < prev) LX.sets[index][i].LRU++;
-      else if (LX.sets[index][i].LRU == prev) LX.sets[index][i].LRU = 0;
+   for (uint32_t i = 0; i < LX->ASSOC; i++) {
+      if (static_cast<int>(LX->sets[index][i].LRU) < prev) LX->sets[index][i].LRU++;
+      else if (static_cast<int>(LX->sets[index][i].LRU) == prev) LX->sets[index][i].LRU = 0;
    }
 }
 
-uint32_t find_MRU(Cache LX, uint32_t index) {
+uint32_t find_MRU(Cache* LX, uint32_t index) {
    uint32_t max = 0;
    uint32_t element = 0;
-   for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].LRU > max) {
-         max = LX.sets[index][i].LRU;
+   for (uint32_t i = 0; i < LX->ASSOC; i++) {
+      if (LX->sets[index][i].LRU > max) {
+         max = LX->sets[index][i].LRU;
          element = i;
       }
    }
    return element;
 }
 
-void eviction(Cache LX, uint32_t address) {
+// void eviction(Cache LX, uint32_t address) {
    
-}
+// }
 
 // write back write allocate
-uint32_t write_command(Cache &LX, uint32_t address, char read_write) {
-   uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
-   uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
-   int prev_lru = 0;
-   uint32_t res_addr = address;
+// uint32_t write_command(Cache* LX, uint32_t address, char read_write) {
+//    uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
+//    uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
+//    int prev_lru = 0;
+//    uint32_t res_addr = address;
 
-   for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].value == tag) {
-         prev_lru = i;
-         update_lru(LX, index, prev_lru);
-         if (LX.next_cache == NULL) {
-            L2_write++;
-            L1_write_miss++;
-         }
-         else {
-            L1_write++;
-            LX.sets[index][i].dirty = true;
-            LX.sets[index][i].valid = true;
-            LX.sets[index][i].value = tag;
-         }
-         return address;
-      }
-   }
-
-   if (LX.next_cache != NULL) {
-      res_addr = write_command(*LX.next_cache, address, read_write);
-      if (res_addr == address) {
-         uint32_t MRU = find_MRU(LX, index);
-         uint32_t MRU_address = LX.sets[index][MRU].value;
-         
-         LX.sets[index][MRU].value = tag;
-         LX.sets[index][MRU].valid = true;
-         LX.sets[index][MRU].dirty = true;
-         prev_lru = -1;
-         update_lru(LX, index, prev_lru);
-         return MRU_address;
-      }
-   }
-
-   return 1;
-}
-
-uint32_t read_command(Cache &LX, uint32_t address) {
-   uint32_t index = (address >> LX.nums_block_offset) & ((1<< LX.nums_index) - 1);
-   uint32_t tag = address >> (LX.nums_index + LX.nums_block_offset);
-   int prev_lru = 0;
-   uint32_t res_addr = address;
-
-   for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].value == tag) {
-         prev_lru = i;
-         update_lru(LX, index, prev_lru);
-         if (LX.next_cache == NULL) {
-            L2_read++;
-            L1_read_miss++;
-            LX.sets[index][i].dirty = false;
-            LX.sets[index][i].value = tag;
-         }
-         else {
-            L1_read++;
-         }
-         return address;
-      }
-   }
-
-   if (LX.next_cache != NULL) {
-      res_addr = read_command(*LX.next_cache, address);
-      if (res_addr == address) {
-         uint32_t MRU = find_MRU(LX, index);
-         uint32_t MRU_addr = LX.sets[index][MRU].value;
+//    for (uint32_t i = 0; i < LX->ASSOC; i++) {
       
-         LX.sets[index][MRU].value = tag;
-         LX.sets[index][MRU].dirty = false;
-         LX.sets[index][MRU].valid = true;
+//       if (LX->sets[index][i].value == tag) {
+//          prev_lru = i;
+//          update_lru(LX, index, prev_lru);
+//          LX->write++;
+//          if (LX->next_cache == nullptr) {
+//             L1_write_miss++;
+//             printf("in L2\n");
+//          }
+//          else {
+//             LX->sets[index][i].dirty = true;
+//             LX->sets[index][i].valid = true;
+//             LX->sets[index][i].value = tag;
+//          }
+//          return address;
+//       }
+//    }
+
+//    if (LX.next_cache != nullptr) {
+//       LX.write_miss++;
+//       res_addr = write_command(*LX.next_cache, address, read_write);
+//       if (res_addr == address) {
+//          uint32_t MRU = find_MRU(LX, index);
+//          uint32_t MRU_address = LX.sets[index][MRU].value;
+         
+//          LX.sets[index][MRU].value = tag;
+//          LX.sets[index][MRU].valid = true;
+//          LX.sets[index][MRU].dirty = true;
+//          prev_lru = -1;
+//          update_lru(LX, index, prev_lru);
+//          return MRU_address;
+//       }
+//    }
+
+//    return 1;
+// }
+
+uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
+   uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
+   uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
+   int prev_lru = 0;
+   uint32_t res_addr = address;
+
+   for (uint32_t i = 0; i < LX->ASSOC; i++) {
+      // L1 or L2 hit
+      if (LX->sets[index][i].value == tag) {
+         prev_lru = i;
+         update_lru(LX, index, prev_lru);
+         if (read_write == READ_COM) {
+            LX->read++;
+         }
+         else {
+            LX->write++;
+         }
+
+         
+         if (LX->next_cache == nullptr) {
+            LX->sets[index][i].dirty = false;
+            LX->sets[index][i].valid = true;
+            LX->sets[index][i].value = tag;
+         }
+         return address;
+      }
+   }
+
+
+   // miss L1
+   if (LX->next_cache != nullptr) {
+      //LX->read_miss++;
+      res_addr = read_command(LX->next_cache, address, read_write);
+      // hit L2 no evition @ L2
+      // evict L1
+      if (res_addr == address) {
+         // find the LRU
+         uint32_t MRU = find_MRU(LX, index);
+         uint32_t MRU_addr = LX->sets[index][MRU].value;
+
+         if (read_write == READ_COM) {
+            LX->sets[index][MRU].dirty = false;
+            LX->read_miss++;
+         }
+         else {
+            LX->sets[index][MRU].dirty = true;
+            LX->write_miss++;
+         }
+
+         LX->sets[index][MRU].value = tag;
+         LX->sets[index][MRU].valid = true;
+
+         // update LRU count
          prev_lru = -1;
          update_lru(LX, index, prev_lru, address);
          return 1;
       }
-   }
+      else {
+         LX->write_back++;
+         //need to evict and clean
+         for (int i = 0; i < LX->ASSOC; i++) {
+            if (LX->sets[index][i].value == res_addr) {
+               if (read_write == READ_COM) LX->sets[index][i].dirty = false;
+               else LX->sets[index][i].dirty = true;
 
-   for (int i = 0; i < LX.ASSOC; i++) {
-      if (LX.sets[index][i].value == res_addr) {
-         LX.sets[index][i].dirty = false;
+               LX->sets[index][i].value = tag;
+               LX->sets[index][i].valid = true;
+            }
+         }
+         return 1;
       }
    }
 
-   if (LX.next_cache == NULL) L2_read_miss++;
-   else L1_read_miss++;
+   // miss L2
+   // clean dirty writeback bit, clean L2
+   //printf("in L2\n");
+   // for (uint32_t i = 0; i < LX->ASSOC; i++) {
+   //    if (LX->sets[index][i].value == res_addr) {
+   //       LX->sets[index][i].dirty = false;
+   //    }
+   // }
+
+   // evict and write in bit
+   //LX->read_miss++;
+   // if (LX->next_cache == nullptr) L2_read_miss++;
+   //else L1_read_miss++;
    uint32_t MRU = find_MRU(LX, index);
-   uint32_t MRU_addr = LX.sets[index][MRU].value;
-      
-   LX.sets[index][MRU].value = tag;
-   LX.sets[index][MRU].dirty = false;
-   LX.sets[index][MRU].valid = true;
-   LX.sets[index][MRU].LRU = 0;
+   uint32_t MRU_addr = LX->sets[index][MRU].value;
+
+   if (read_write == READ_COM) LX->read_miss++;
+   else LX->write_miss++;
+   
+   mem_traffic++;
+   LX->sets[index][MRU].value = tag;
+   LX->sets[index][MRU].dirty = false;
+   LX->sets[index][MRU].valid = true;
+   LX->sets[index][MRU].LRU = 0;
+   LX->write_back++;
 
    prev_lru = -1;
    update_lru(LX, index, prev_lru, address);
    return MRU_addr;
 }
-
 
 int main (int argc, char *argv[]) {
    FILE *fp;			// File pointer.
@@ -240,24 +260,31 @@ int main (int argc, char *argv[]) {
    printf("trace_file: %s\n", trace_file);
    printf("\n");
 
-   Cache L1 = Cache(params.BLOCKSIZE, params.L1_SIZE, params.L1_ASSOC);
-   printf("%d\n%d\n%d\n",L1.BLOCKSIZE, L1.SIZE, L1.ASSOC);
+   Cache* L1 = new Cache(params.BLOCKSIZE, params.L1_SIZE, params.L1_ASSOC);
+   //printf("%d\n%d\n%d\n",L1->BLOCKSIZE, L1->SIZE, L1->ASSOC);
+
+   Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+   //printf("%d\n%d\n%d\n",L2->BLOCKSIZE, L2->SIZE, L2->ASSOC);
 
    if (params.L2_ASSOC > 0 && params.L2_SIZE > 0) {
-      Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
-      printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
-      L1.next_cache = &L2;
+      // Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+      // printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
+      L1->next_cache = L2;
    }
+
+   // printf("%d\n",L1.next_cache->ASSOC);
+   //print_func(*L1->next_cache);
 
    // Read requests from the trace file and echo them back.
    while (fscanf(fp, "%c %x\n", &rw, &addr) == 2) {	// Stay in the loop if fscanf() successfully parsed two tokens as specified.
       if (rw == 'r') {
          printf("r %x\n", addr);
-         read_command(L1,addr);
-      }
          
-      else if (rw == 'w')
-         printf("w %x\n", addr);
+         // printf("%d\n", read_command(*L1.next_cache,addr));
+      }
+      else if (rw == 'w') {
+          printf("w %x\n", addr);
+      }
       else {
          printf("Error: Unknown request type %c.\n", rw);
 	 exit(EXIT_FAILURE);
@@ -266,12 +293,25 @@ int main (int argc, char *argv[]) {
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.
       ///////////////////////////////////////////////////////
-      
+      read_command(L1,addr,rw);
     }
 
-    printf("L1 read: %d\n", L1_read);
-    printf("L1 read miss: %d\n", L1_read_miss);
-    printf("L2 read: %d\n", L2_read);
-    printf("L2 read miss: %d\n", L2_read_miss);
+    printf("L1 read: %d\n", L1->read);
+    printf("L1 read misses: %d\n", L1->read_miss);
+    printf("L1 write: %d\n", L1->write);
+    printf("L1 write_misses: %d\n", L1->write_miss);
+    printf("L1 miss rate: %d\n", (L1->read_miss + L1->write_miss)/(L1->read + L1->write));
+    printf("L1 writebacks: %d\n", L1->write_back);
+    printf("L1 prefetch: %d\n", L1->prefetches);
+
+    printf("L2 read: %d\n", L2->read);
+    printf("L2 read misses: %d\n", L2->read_miss);
+    printf("L2 write: %d\n", L2->write);
+    printf("L2 write_misses: %d\n", L2->write_miss);
+    printf("L2 miss rate: %d\n", (L2->read_miss + L2->write_miss)/(L2->read + L2->write));
+    printf("L2 writebacks: %d\n", L2->write_back);
+    printf("L2 prefetch: %d\n", L2->prefetches);
+
+    printf("Total Memory Traffic: %d\n", mem_traffic);
     return(0);
 }

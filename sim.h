@@ -32,12 +32,14 @@ class Mem_Space {
    bool valid;
    uint32_t value;
    uint32_t LRU;
+   uint32_t address;
 
    Mem_Space() {
       dirty = false;
       valid = false;
       value = 0;
       LRU = 0;
+      address = 0;
    }
 
    Mem_Space(bool dbit, bool vbit, uint32_t val, uint32_t LRU_val) {
@@ -45,6 +47,7 @@ class Mem_Space {
       this->valid = vbit;
       this->value = val;
       this->LRU = LRU_val;
+      this->address = 0;
    }
 
    Mem_Space operator=(const Mem_Space& temp) {

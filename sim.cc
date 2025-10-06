@@ -25,20 +25,6 @@ const char READ_HIT = '2';
 const char WRITE_MISS = '3';
 const char READ_MISS = '4';
 int mem_traffic = 0;
-// int L1_read = 0;
-// int L1_read_miss = 0;
-// int L1_write = 0;
-// int L1_write_miss = 0;
-// int L1_miss_rate = 0;
-// int L1_write_back = 0;
-// int L1_prefetches = 0;
-// int L2_read = 0;
-// int L2_read_miss = 0;
-// int L2_write = 0;
-// int L2_write_miss = 0;
-// int L2_miss_rate = 0;
-// int L2_write_back = 0;
-// int L2_prefetches = 0;
 
 bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
       return block1.LRU < block2.LRU;
@@ -117,6 +103,112 @@ uint32_t find_MRU(Cache* LX, uint32_t index) {
 //    return 1;
 // }
 
+// uint32_t reconstruct_addr(uint32_t index, uint32_t tag) {
+
+// }
+
+uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) {
+   uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
+   uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
+   int prev_lru = 0;
+   uint32_t res_addr = address;
+
+   for (uint32_t i = 0; i < LX->ASSOC; i++) {
+      // L1 or L2 hit
+      if (LX->sets[index][i].value == tag) {
+         // prev_lru = i;
+         // update_lru(LX, index, prev_lru);
+         if (write_back) {
+            printf("WRITEBACK");
+            LX->sets[index][i].address = address;
+            LX->sets[index][i].dirty = true;
+            return 1;
+         }
+         prev_lru = i;
+         update_lru(LX, index, prev_lru);
+         if (read_write == READ_COM) {
+            //if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
+            LX->read++;
+         }
+         else {
+            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = true;
+            LX->write++;
+         }
+         return address;
+      }
+   }
+
+   // write back and regular recursive call handled for L1 here
+   uint32_t MRU = find_MRU(LX, index);
+   printf("CHECK FOR IF L1");
+   if (LX->next_cache != nullptr) {
+      printf("IN L1 still going to check dirty");
+      if (LX->sets[index][MRU].dirty) {
+         printf("AT L1, MISS");
+         //reconstruct address
+         LX->write_back++;
+         write_back = true;
+         res_addr = command(LX->next_cache, LX->sets[index][MRU].address, read_write, write_back);
+         //handle eviction for L1 dirty
+      }
+
+      write_back = false;
+      res_addr = command(LX->next_cache, address, read_write, false);
+
+      if (res_addr == address) {
+         LX->sets[index][MRU].value = tag;
+         LX->sets[index][MRU].address = address;
+         if (read_write == READ_COM) {
+            LX->sets[index][MRU].dirty = false;
+            LX->read++;
+            LX->read_miss++;
+         }
+         else {
+            LX->sets[index][MRU].dirty = true;
+            LX->write++;
+            LX->write_miss++;
+            printf("write miss");
+         }
+         LX->sets[index][MRU].LRU = 0;
+
+         prev_lru = -1;
+         update_lru(LX, index, prev_lru, tag);
+         return address;
+      }
+   }
+
+   // handle L2 write back and L2 miss here
+   //either need to fetch from main memory
+   mem_traffic++;
+   if (LX->sets[index][MRU].dirty) {
+      LX->write_back++;
+      mem_traffic++;
+   }
+   uint32_t MRU_addr = LX->sets[index][MRU].address;
+
+   if (read_write == READ_COM) {
+      LX->sets[index][MRU].dirty = false;
+      LX->read++;
+      LX->read_miss++;
+   }
+   else {
+      LX->sets[index][MRU].dirty = true;
+      LX->write++;
+      LX->write_miss++;
+      //printf("write miss");
+   }
+
+   //LX->sets[index][MRU].dirty = false;
+   LX->sets[index][MRU].valid = true;
+   LX->sets[index][MRU].value = tag;
+   LX->sets[index][MRU].address = address;
+   prev_lru = -1;
+   LX->sets[index][MRU].LRU = 0;
+   update_lru(LX, index, prev_lru, tag);
+
+   return MRU_addr;
+}
+
 uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
    uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
    uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
@@ -129,7 +221,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          prev_lru = i;
          update_lru(LX, index, prev_lru);
          if (read_write == READ_COM) {
-            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
+            //if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
             LX->read++;
          }
          else {
@@ -150,13 +242,18 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
 
    // miss L1
    if (LX->next_cache != nullptr) {
+      uint32_t MRU = find_MRU(LX, index);
+      // if (LX->sets[index][MRU].dirty) {
+      //    uint32_t MRU_address = LX->sets[index][MRU].address;
+
+      // }
       //LX->read_miss++;
       res_addr = read_command(LX->next_cache, address, read_write);
       // hit L2 no evition @ L2
       // evict L1
       if (res_addr == address) {
          // find the LRU
-         uint32_t MRU = find_MRU(LX, index);
+         //uint32_t MRU = find_MRU(LX, index);
          //uint32_t MRU_addr = LX->sets[index][MRU].value;
 
          if (read_write == READ_COM) {
@@ -170,6 +267,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
             LX->write_miss++;
          }
 
+         LX->sets[index][MRU].address = address;
          LX->sets[index][MRU].value = tag;
          //LX->sets[index][MRU].valid = true;
          LX->sets[index][MRU].LRU = 0;
@@ -190,13 +288,16 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
                // }
                if (read_write == READ_COM) {
                   LX->read++;
+                  LX->read_miss++;
                   //LX->sets[index][i].dirty = false;
                }
                else {
                   LX->write++;
+                  LX->write_miss++;
                   //LX->sets[index][i].dirty = true;
                }
 
+               LX->sets[index][i].address = address;
                LX->sets[index][i].value = tag;
                LX->sets[index][i].LRU = 0;
                //LX->sets[index][i].valid = true;
@@ -306,33 +407,34 @@ int main (int argc, char *argv[]) {
 
    // Read requests from the trace file and echo them back.
    while (fscanf(fp, "%c %x\n", &rw, &addr) == 2) {	// Stay in the loop if fscanf() successfully parsed two tokens as specified.
-      if (rw == 'r') {
-         printf("r %x\n", addr);
+   //    if (rw == 'r') {
+   //       printf("r %x\n", addr);
          
-         // printf("%d\n", read_command(*L1.next_cache,addr));
-      }
-      else if (rw == 'w') {
-          printf("w %x\n", addr);
-      }
-      else {
-         printf("Error: Unknown request type %c.\n", rw);
-	 exit(EXIT_FAILURE);
-      }
+   //       // printf("%d\n", read_command(*L1.next_cache,addr));
+   //    }
+   //    else if (rw == 'w') {
+   //        printf("w %x\n", addr);
+   //    }
+   //    else {
+   //       printf("Error: Unknown request type %c.\n", rw);
+	//  exit(EXIT_FAILURE);
+   //    }
 
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.
       ///////////////////////////////////////////////////////
-      read_command(L1,addr,rw);
+      //read_command(L1,addr,rw);
+      command(L1, addr, rw, false);
     }
 
     
-    Mem_Space* temp = new Mem_Space();
+    //Mem_Space* temp = new Mem_Space();
     printf("===== L1 contents =====\n");
     for (uint32_t i = 0; i < L1->nums_sets; i++) {
       sort(L1->sets[i].begin(), L1->sets[i].end(),compare_LRU);
       printf("set      %d:    ",i);
       for (uint32_t j = 0; j < L1->ASSOC; j++) {
-         printf("%d", L1->sets[i][j].value);
+         printf("%" PRIu32, L1->sets[i][j].value);
          if (L1->sets[i][j].dirty) {
             printf(" D");
          }
@@ -352,7 +454,7 @@ int main (int argc, char *argv[]) {
          sort(L2->sets[i].begin(), L2->sets[i].end(), compare_LRU);
          printf("set      %d:    ", i);
          for (uint32_t j = 0; j < L2->ASSOC; j++) {
-            printf("%d", L2->sets[i][j].value);
+            printf("%" PRIu32, L2->sets[i][j].value);
             if (L2->sets[i][j].dirty) {
                printf(" D");
             }

@@ -471,18 +471,18 @@ int main (int argc, char *argv[]) {
     printf("b. L1 read misses:             %d\n", L1->read_miss);
     printf("c. L1 writes:                  %d\n", L1->write);
     printf("d. L1 write misses:            %d\n", L1->write_miss);
-    printf("e. L1 miss rate:               %.6f\n", static_cast<double>(L1->read_miss + L1->write_miss)/(L1->read + L1->write));
+    printf("e. L1 miss rate:               %f\n", static_cast<float>(L1->read_miss + L1->write_miss)/(L1->read + L1->write));
     printf("f. L1 writebacks:              %d\n", L1->write_back);
     printf("g. L1 prefetches:              %d\n", L1->prefetches);
 
     printf("h. L2 reads (demand):          %d\n", L2->read);
     printf("i. L2 read misses (demand):    %d\n", L2->read_miss);
-    printf("j. L2 reads (prefetch):        0\n");
-    printf("k. L2 read misses (prefetch):  0\n");
+    printf("j. L2 reads (prefetch):        0.0000\n");
+    printf("k. L2 read misses (prefetch):  0.0000\n");
     printf("l. L2 writes:                  %d\n", L2->write);
     printf("m. L2 write misses:            %d\n", L2->write_miss);
     if (L2->read > 0 || L2->write > 0) {
-      printf("n. L2 miss rate:               %.6f\n", static_cast<double>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
+      printf("n. L2 miss rate:               %f\n", static_cast<float>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
     }
     else {
       printf("n. L2 miss rate:               0\n");

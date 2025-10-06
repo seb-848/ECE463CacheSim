@@ -92,11 +92,21 @@ class Cache {
       this->BLOCKSIZE = inputBlocksize;
       this->SIZE = inputSize;
       this->ASSOC = inputAssoc;
-      this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);
-      this->nums_index = log2(nums_sets);
-      this->nums_block_offset = log2(BLOCKSIZE);
+      if (inputBlocksize == 0 && inputSize == 0 && inputAssoc == 0) {
+         this->nums_sets = 0;
+         this->nums_index = 0;
+         this->nums_block_offset = 0;
+      } 
+      else {
+         this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);
+         this->nums_index = log2(nums_sets);
+         this->nums_block_offset = log2(BLOCKSIZE);
+      }
+      //this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);
+      //this->nums_index = log2(nums_sets);
+      //this->nums_block_offset = log2(BLOCKSIZE);
       this->nums_tag = ADDRESS_SIZE - nums_index - nums_block_offset;
-      default_block.LRU = this->ASSOC;
+      this->default_block.LRU = this->ASSOC;
       this->next_cache = nullptr;
       this->write = 0, this->write_back = 0, this->write_miss = 0;
       this->read = 0, this->read_miss = 0, this->miss_rate = 0, this->prefetches = 0;

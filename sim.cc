@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "sim.h"
+#include <algorithm>
 
 /*  "argc" holds the number of command-line arguments.
     "argv[]" holds the arguments themselves.
@@ -124,18 +125,20 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          prev_lru = i;
          update_lru(LX, index, prev_lru);
          if (read_write == READ_COM) {
+            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
             LX->read++;
          }
          else {
+            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
             LX->write++;
          }
 
-         
-         if (LX->next_cache == nullptr) {
-            LX->sets[index][i].dirty = false;
-            LX->sets[index][i].valid = true;
-            LX->sets[index][i].value = tag;
-         }
+         // dirty 
+         // if (LX->next_cache != nullptr) {
+         //    LX->sets[index][i].dirty = true;
+         //    LX->sets[index][i].valid = true;
+         //    LX->sets[index][i].value = tag;
+         // }
          return address;
       }
    }
@@ -162,7 +165,8 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          }
 
          LX->sets[index][MRU].value = tag;
-         LX->sets[index][MRU].valid = true;
+         //LX->sets[index][MRU].valid = true;
+         LX->sets[index][MRU].LRU = 0;
 
          // update LRU count
          prev_lru = -1;
@@ -174,11 +178,18 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          //need to evict and clean
          for (int i = 0; i < LX->ASSOC; i++) {
             if (LX->sets[index][i].value == res_addr) {
+               // if (!LX->sets[index][i].dirty) {
+               //    LX->sets[index][i].value = tag;
+               //    LX->sets[index][i].LRU = 0;
+               // }
                if (read_write == READ_COM) LX->sets[index][i].dirty = false;
                else LX->sets[index][i].dirty = true;
 
                LX->sets[index][i].value = tag;
-               LX->sets[index][i].valid = true;
+               LX->sets[index][i].LRU = 0;
+               //LX->sets[index][i].valid = true;
+               prev_lru = -1;
+               update_lru(LX, index, prev_lru, address);
             }
          }
          return 1;
@@ -262,15 +273,23 @@ int main (int argc, char *argv[]) {
 
    Cache* L1 = new Cache(params.BLOCKSIZE, params.L1_SIZE, params.L1_ASSOC);
    //printf("%d\n%d\n%d\n",L1->BLOCKSIZE, L1->SIZE, L1->ASSOC);
+   if (L1->next_cache == nullptr) printf("NULLPTR");
 
-   Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+   Cache* L2 = new Cache();
+   //Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+   //if (L1->next_cache == nullptr) printf("NULLPTR");
    //printf("%d\n%d\n%d\n",L2->BLOCKSIZE, L2->SIZE, L2->ASSOC);
 
-   if (params.L2_ASSOC > 0 && params.L2_SIZE > 0) {
+   if (params.L2_SIZE > 0) {
+      
       // Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       // printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
+      delete(L2);
+      Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       L1->next_cache = L2;
    }
+
+   if (L1->next_cache == nullptr) printf("NULLPTR");
 
    // printf("%d\n",L1.next_cache->ASSOC);
    //print_func(*L1->next_cache);
@@ -296,22 +315,63 @@ int main (int argc, char *argv[]) {
       read_command(L1,addr,rw);
     }
 
-    printf("L1 read: %d\n", L1->read);
-    printf("L1 read misses: %d\n", L1->read_miss);
-    printf("L1 write: %d\n", L1->write);
-    printf("L1 write_misses: %d\n", L1->write_miss);
-    printf("L1 miss rate: %d\n", (L1->read_miss + L1->write_miss)/(L1->read + L1->write));
-    printf("L1 writebacks: %d\n", L1->write_back);
-    printf("L1 prefetch: %d\n", L1->prefetches);
+    printf("===== L1 contents =====\n");
+    for (int i = 0; i < L1->nums_sets; i++) {
+      sort(L1->sets[i].begin(), L1->sets[i].end());
+      printf("set      %d:    ",i);
+      for (int j = 0; j < L1->ASSOC; j++) {
+         printf("%d", L1->sets[i][j].value);
+         if (L1->sets[i][j].dirty) {
+            printf(" D");
+         }
+         if (L1->ASSOC == j + 1) printf("\n");
+         else printf("   ");
+      }
+    }
 
-    printf("L2 read: %d\n", L2->read);
-    printf("L2 read misses: %d\n", L2->read_miss);
-    printf("L2 write: %d\n", L2->write);
-    printf("L2 write_misses: %d\n", L2->write_miss);
-    printf("L2 miss rate: %d\n", (L2->read_miss + L2->write_miss)/(L2->read + L2->write));
-    printf("L2 writebacks: %d\n", L2->write_back);
-    printf("L2 prefetch: %d\n", L2->prefetches);
+    if (L2->SIZE > 0) {
+      printf("\n===== L2 contents =====\n");
+      for (int i = 0; i < L2->nums_sets; i++) {
+         sort(L2->sets[i].begin(), L2->sets[i].end());
+         printf("set      %d:    ", i);
+         for (int j = 0; j < L2->ASSOC; j++) {
+            printf("%d", L2->sets[i][j].value);
+            if (L2->sets[i][j].dirty) {
+               printf(" D");
+            }
+            if (L2->ASSOC == j + 1) printf("\n");
+            else printf("   ");
+         }
+      }
+    }
+    printf("\n===== Measurements =====\n");
+    printf("a. L1 reads:                   %d\n", L1->read);
+    printf("b. L1 read misses:             %d\n", L1->read_miss);
+    printf("c. L1 writes:                  %d\n", L1->write);
+    printf("d. L1 write misses:            %d\n", L1->write_miss);
+    printf("e. L1 miss rate:               %f\n", static_cast<double>(L1->read_miss + L1->write_miss)/(L1->read + L1->write));
+    printf("f. L1 writebacks:              %d\n", L1->write_back);
+    printf("g. L1 prefetches:              %d\n", L1->prefetches);
 
-    printf("Total Memory Traffic: %d\n", mem_traffic);
+    printf("h. L2 reads (demand):          %d\n", L2->read);
+    printf("i. L2 read misses (demand):    %d\n", L2->read_miss);
+    printf("j. L2 reads (prefetch):        0\n");
+    printf("k. L2 read misses (prefetch):  0\n");
+    printf("l. L2 writes:                  %d\n", L2->write);
+    printf("m. L2 write misses:            %d\n", L2->write_miss);
+    if (L2->read > 0 || L2->write > 0) {
+      printf("n. L2 miss rate:               %f\n", static_cast<double>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
+    }
+    else {
+      printf("n. L2 miss rate:               0\n");
+    }
+   //  printf("L2 miss rate: %.2d\n", (L2->read_miss + L2->write_miss)/(L2->read + L2->write));
+    printf("o. L2 writebacks:              %d\n", L2->write_back);
+    printf("p. L2 prefetches:              %d\n", L2->prefetches);
+
+    printf("q. memory traffic:             %d\n", mem_traffic);
+
+    delete(L1);
+    delete(L2);
     return(0);
 }

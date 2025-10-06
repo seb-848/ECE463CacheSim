@@ -50,12 +50,13 @@ class Mem_Space {
       this->address = 0;
    }
 
-   Mem_Space operator=(const Mem_Space& temp) {
-      this->dirty = temp.dirty;
-      this->valid = temp.valid;
-      this->value = temp.value;
-      this->valid = temp.valid;
-      return *this;
+   static void copy_mem_space(Mem_Space *a, Mem_Space *temp) {
+      a->dirty = temp->dirty;
+      a->valid = temp->valid;
+      a->value = temp->value;
+      a->LRU = temp->LRU;
+      a->address = temp->address;
+      return;
    }
 };
 

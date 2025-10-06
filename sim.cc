@@ -38,12 +38,36 @@ void update_lru(Cache* LX, uint32_t index, uint32_t prev, uint32_t addr) {
       if (LX->sets[index][i].LRU < prev) {
          LX->sets[index][i].LRU++;
       }
-      else if (flag == 0 && LX->sets[index][i].value == addr) {
+      else if (flag == 0 && LX->sets[index][i].LRU == prev) {
          LX->sets[index][i].LRU = 0;
          flag++;
       }
    }
    //sort(LX->sets[index].begin(), LX->sets[index].begin(), compare_LRU);
+}
+
+void sort_vec(Cache* LX) {
+   for (uint32_t i = 0; i < LX->nums_sets; i++) {
+      for (uint32_t j = 1; j < LX->ASSOC; j++) {
+         for (uint32_t k = 0; k < LX->ASSOC; k++) {
+            if (LX->sets[i][k].LRU > LX->sets[i][j].LRU) {
+            Mem_Space* temp = new Mem_Space();
+            Mem_Space::copy_mem_space(temp, &LX->sets[i][k]);
+            Mem_Space::copy_mem_space(&LX->sets[i][k], &LX->sets[i][j]);
+            Mem_Space::copy_mem_space(&LX->sets[i][j], temp);
+            
+         }
+         }
+         // if (LX->sets[i][j-1].LRU > LX->sets[i][j].LRU) {
+         //    Mem_Space* temp = new Mem_Space();
+         //    Mem_Space::copy_mem_space(temp, &LX->sets[i][j-1]);
+         //    Mem_Space::copy_mem_space(&LX->sets[i][j-1], &LX->sets[i][j]);
+         //    Mem_Space::copy_mem_space(&LX->sets[i][j], temp);
+            
+         // }
+      }
+   }
+   return;
 }
 
 uint32_t find_MRU(Cache* LX, uint32_t index) {
@@ -83,7 +107,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             //if (LX->next_cache == nullptr) LX->read++;
             LX->sets[index][i].dirty = true;
             LX->sets[index][i].address = address;
-             LX->sets[index][i].value = tag;
+            LX->sets[index][i].value = tag;
 
             LX->write++;
          }
@@ -260,7 +284,8 @@ int main (int argc, char *argv[]) {
     //Mem_Space* temp = new Mem_Space();
     printf("===== L1 contents =====\n");
     for (uint32_t i = 0; i < L1->nums_sets; i++) {
-      sort(L1->sets[i].begin(), L1->sets[i].end(),compare_LRU);
+      //sort(L1->sets[i].begin(), L1->sets[i].end(),compare_LRU);
+      sort_vec(L1);
       printf("set      %d:    ",i);
       for (uint32_t j = 0; j < L1->ASSOC; j++) {
          printf("%x", L1->sets[i][j].value);
@@ -275,10 +300,15 @@ int main (int argc, char *argv[]) {
     if (L2->SIZE > 0) {
       printf("\n===== L2 contents =====\n");
       for (uint32_t i = 0; i < L2->nums_sets; i++) {
-         sort(L2->sets[i].begin(), L2->sets[i].end(), compare_LRU);
+         // sort(L2->sets[i].begin(), L2->sets[i].end(), [](const Mem_Space &a, const Mem_Space &b){
+         //    return a.LRU < b.LRU;
+         // });
+         sort_vec(L2);
          //printf("tag: %x lru: %d || tag: %x lru: %d || tag: %x lru: %d || tag: %x lru: %d ||",L2->sets[i][0].value,L2->sets[i][0].LRU,L2->sets[i][1].value,L2->sets[i][1].LRU,L2->sets[i][2].value,L2->sets[i][2].LRU,L2->sets[i][3].value,L2->sets[i][3].LRU);
+         //sort_vec(L2);
          printf("set      %d:    ", i);
          for (uint32_t j = 0; j < L2->ASSOC; j++) {
+            
             printf("%x", L2->sets[i][j].value);
             if (L2->sets[i][j].dirty) {
                printf(" D");

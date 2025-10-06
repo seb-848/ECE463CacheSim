@@ -293,8 +293,6 @@ int main (int argc, char *argv[]) {
       L1->next_cache = L2;
    }
 
-   if (L1->next_cache == nullptr) printf("NULLPTR");
-
    // printf("%d\n",L1.next_cache->ASSOC);
    //print_func(*L1->next_cache);
 

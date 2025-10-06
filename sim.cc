@@ -31,7 +31,7 @@ bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
     }
 
 void update_lru(Cache* LX, uint32_t index, uint32_t prev, uint32_t addr = 0) {
-   int flag = 0;
+   //int flag = 0;
    // if (prev < 0) {
    //    for (uint32_t i = 0; i < LX->ASSOC; i++) {
    //       if (LX->sets[index][i].value != addr) LX->sets[index][i].LRU++;
@@ -44,9 +44,9 @@ void update_lru(Cache* LX, uint32_t index, uint32_t prev, uint32_t addr = 0) {
          LX->sets[index][i].LRU++;
          
       }
-      else if (LX->sets[index][i].LRU == prev && flag == 0) {
+      else if (LX->sets[index][i].LRU == prev && LX->sets[index][i].value == addr) {
          LX->sets[index][i].LRU = 0;
-         flag = -1;
+         //flag = -1;
       }
       
    }
@@ -67,34 +67,23 @@ uint32_t find_MRU(Cache* LX, uint32_t index) {
 uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) {
    uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
    uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
-   int prev_lru = 0;
    uint32_t res_addr = address;
 
    for (uint32_t i = 0; i < LX->ASSOC; i++) {
       // L1 or L2 hit
       if (LX->sets[index][i].value == tag) {
-         // prev_lru = i;
-         // update_lru(LX, index, prev_lru);
          if (write_back) {
-            //printf("WRITEBACK");
             LX->sets[index][i].address = address;
             LX->sets[index][i].value = tag;
             LX->sets[index][i].dirty = true;
             return 1;
          }
-         //LX->sets[index][i].LRU = 0;
-         prev_lru = i;
-         update_lru(LX, index, LX->sets[index][i].LRU);
+         
+         update_lru(LX, index, LX->sets[index][i].LRU, LX->sets[index][i].value);
          if (read_write == READ_COM) {
-            //if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
             LX->read++;
          }
          else {
-            //if (LX->next_cache != nullptr) LX->sets[index][i].dirty = true;
-            // if (LX->sets[index][i].dirty) {
-            //    write_back = true;
-            //    res_addr = command(LX, address, read_write, write_back);
-            // }
             LX->sets[index][i].dirty = true;
             LX->write++;
          }
@@ -131,12 +120,9 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             LX->sets[index][MRU].dirty = true;
             LX->write++;
             LX->write_miss++;
-            //printf("write miss");
          }
-         //LX->sets[index][MRU].LRU = 0;
-
-         prev_lru = MRU;
-         update_lru(LX, index, LX->sets[index][MRU].LRU);
+         
+         update_lru(LX, index, LX->sets[index][MRU].LRU, LX->sets[index][MRU].value);
          return address;
       }
    }
@@ -168,9 +154,8 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    LX->sets[index][MRU].valid = true;
    LX->sets[index][MRU].value = tag;
    LX->sets[index][MRU].address = address;
-   prev_lru = MRU;
-   //LX->sets[index][MRU].LRU = 0;
-   update_lru(LX, index, LX->sets[index][MRU].LRU);
+
+   update_lru(LX, index, LX->sets[index][MRU].LRU, LX->sets[index][MRU].value);
 
    return MRU_addr;
 }

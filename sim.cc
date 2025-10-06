@@ -27,7 +27,7 @@ const char READ_MISS = '4';
 int mem_traffic = 0;
 
 bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
-      return block1.LRU > block2.LRU;
+      return block1.LRU < block2.LRU;
     }
 
 void update_lru(Cache* LX, uint32_t index, int prev, uint32_t addr = 0) {
@@ -37,7 +37,7 @@ void update_lru(Cache* LX, uint32_t index, int prev, uint32_t addr = 0) {
       }
    }
    for (uint32_t i = 0; i < LX->ASSOC; i++) {
-      if (static_cast<int>(LX->sets[index][i].LRU) < prev) LX->sets[index][i].LRU++;
+      if (static_cast<int>(LX->sets[index][i].LRU) <= prev) LX->sets[index][i].LRU++;
       else if (static_cast<int>(LX->sets[index][i].LRU) == prev) LX->sets[index][i].LRU = 0;
    }
 }

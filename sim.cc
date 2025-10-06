@@ -78,6 +78,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
          if (write_back) {
             //printf("WRITEBACK");
             LX->sets[index][i].address = address;
+            LX->sets[index][i].value = tag;
             LX->sets[index][i].dirty = true;
             return 1;
          }
@@ -103,11 +104,11 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
 
    // write back and regular recursive call handled for L1 here
    uint32_t MRU = find_MRU(LX, index);
-   //printf("CHECK FOR IF L1");
+   
    if (LX->next_cache != nullptr) {
-      //printf("IN L1 still going to check dirty");
+      
       if (LX->sets[index][MRU].dirty) {
-         //printf("AT L1, MISS");
+         
          //reconstruct address
          LX->write_back++;
          write_back = true;
@@ -353,7 +354,7 @@ int main (int argc, char *argv[]) {
    //printf("%d\n%d\n%d\n",L1->BLOCKSIZE, L1->SIZE, L1->ASSOC);
    //if (L1->next_cache == nullptr) printf("NULLPTR");
 
-   Cache* L2 = new Cache();
+   Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
    //Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
    //if (L1->next_cache == nullptr) printf("NULLPTR");
    //printf("%d\n%d\n%d\n",L2->BLOCKSIZE, L2->SIZE, L2->ASSOC);
@@ -362,8 +363,8 @@ int main (int argc, char *argv[]) {
       
       // Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       // printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
-      delete(L2);
-      Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+      //delete(L2);
+      //Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       L1->next_cache = L2;
    }
 
@@ -411,11 +412,6 @@ int main (int argc, char *argv[]) {
     if (L2->SIZE > 0) {
       printf("\n===== L2 contents =====\n");
       for (uint32_t i = 0; i < L2->nums_sets; i++) {
-         // for (uint32_t k = 1; k < L2->ASSOC; k++) {
-         //    if (L2->sets[i][k - 1].LRU > L2->sets[i][k].LRU) {
-         //       temp = L2->sets[]
-         //    }
-         // }
          sort(L2->sets[i].begin(), L2->sets[i].end(), compare_LRU);
          printf("set      %d:    ", i);
          for (uint32_t j = 0; j < L2->ASSOC; j++) {

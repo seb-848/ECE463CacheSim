@@ -123,7 +123,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
          }
          
          update_lru(LX, index, LX->sets[index][MRU].LRU, LX->sets[index][MRU].value);
-         return address;
+         return 1;
       }
    }
 
@@ -135,6 +135,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
       LX->write_back++;
       mem_traffic++;
    }
+
    uint32_t MRU_addr = LX->sets[index][MRU].address;
 
    if (read_write == READ_COM) {
@@ -151,6 +152,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
 
    //LX->sets[index][MRU].dirty = false;
    if (LX->next_cache == nullptr) mem_traffic++;
+
    LX->sets[index][MRU].valid = true;
    LX->sets[index][MRU].value = tag;
    LX->sets[index][MRU].address = address;

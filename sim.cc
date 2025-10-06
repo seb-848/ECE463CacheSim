@@ -363,8 +363,9 @@ int main (int argc, char *argv[]) {
       //Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       // Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       // printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
-      delete(L2);
-      Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+      L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
+      // delete(L2);
+      // Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       L1->next_cache = L2;
    }
 

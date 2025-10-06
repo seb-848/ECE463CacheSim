@@ -176,7 +176,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
 
          // update LRU count
          prev_lru = -1;
-         update_lru(LX, index, prev_lru, address);
+         update_lru(LX, index, prev_lru, tag);
          return 1;
       }
       else {

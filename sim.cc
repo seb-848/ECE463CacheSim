@@ -180,7 +180,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    // handle L2 write back and L2 miss here
    //either need to fetch from main memory
    // add write back
-   mem_traffic++;
+   //mem_traffic++;
    if (LX->sets[index][MRU].dirty) {
       LX->write_back++;
       mem_traffic++;
@@ -200,6 +200,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    }
 
    //LX->sets[index][MRU].dirty = false;
+   mem_traffic++;
    LX->sets[index][MRU].valid = true;
    LX->sets[index][MRU].value = tag;
    LX->sets[index][MRU].address = address;
@@ -435,7 +436,7 @@ int main (int argc, char *argv[]) {
       sort(L1->sets[i].begin(), L1->sets[i].end(),compare_LRU);
       printf("set      %d:    ",i);
       for (uint32_t j = 0; j < L1->ASSOC; j++) {
-         printf("%" PRIu32, L1->sets[i][j].value);
+         printf("%x", L1->sets[i][j].value);
          if (L1->sets[i][j].dirty) {
             printf(" D");
          }
@@ -455,7 +456,7 @@ int main (int argc, char *argv[]) {
          sort(L2->sets[i].begin(), L2->sets[i].end(), compare_LRU);
          printf("set      %d:    ", i);
          for (uint32_t j = 0; j < L2->ASSOC; j++) {
-            printf("%" PRIu32, L2->sets[i][j].value);
+            printf("%x", L2->sets[i][j].value);
             if (L2->sets[i][j].dirty) {
                printf(" D");
             }
@@ -469,7 +470,7 @@ int main (int argc, char *argv[]) {
     printf("b. L1 read misses:             %d\n", L1->read_miss);
     printf("c. L1 writes:                  %d\n", L1->write);
     printf("d. L1 write misses:            %d\n", L1->write_miss);
-    printf("e. L1 miss rate:               %f\n", static_cast<double>(L1->read_miss + L1->write_miss)/(L1->read + L1->write));
+    printf("e. L1 miss rate:               %.6f\n", static_cast<double>(L1->read_miss + L1->write_miss)/(L1->read + L1->write));
     printf("f. L1 writebacks:              %d\n", L1->write_back);
     printf("g. L1 prefetches:              %d\n", L1->prefetches);
 
@@ -480,7 +481,7 @@ int main (int argc, char *argv[]) {
     printf("l. L2 writes:                  %d\n", L2->write);
     printf("m. L2 write misses:            %d\n", L2->write_miss);
     if (L2->read > 0 || L2->write > 0) {
-      printf("n. L2 miss rate:               %f\n", static_cast<double>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
+      printf("n. L2 miss rate:               %.6f\n", static_cast<double>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
     }
     else {
       printf("n. L2 miss rate:               0\n");

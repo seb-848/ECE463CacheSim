@@ -154,7 +154,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
       }
 
       write_back = false;
-      res_addr = command(LX->next_cache, address, read_write, false);
+      res_addr = command(LX->next_cache, address, read_write, write_back);
 
       if (res_addr == address) {
          LX->sets[index][MRU].value = tag;
@@ -182,7 +182,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    //either need to fetch from main memory
    // add write back
    //mem_traffic++;
-   if (LX->sets[index][MRU].dirty) {
+   if (LX->sets[index][MRU].dirty && LX->next_cache == nullptr) {
       LX->write_back++;
       mem_traffic++;
    }
@@ -201,7 +201,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
    }
 
    //LX->sets[index][MRU].dirty = false;
-   mem_traffic++;
+   if (LX->next_cache == nullptr) mem_traffic++;
    LX->sets[index][MRU].valid = true;
    LX->sets[index][MRU].value = tag;
    LX->sets[index][MRU].address = address;

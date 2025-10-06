@@ -27,7 +27,7 @@ const char READ_MISS = '4';
 int mem_traffic = 0;
 
 bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
-      return block1.LRU < block2.LRU;
+      return block1.LRU > block2.LRU;
     }
 
 void update_lru(Cache* LX, uint32_t index, int prev, uint32_t addr = 0) {

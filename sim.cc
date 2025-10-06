@@ -356,18 +356,18 @@ int main (int argc, char *argv[]) {
 
    // Read requests from the trace file and echo them back.
    while (fscanf(fp, "%c %x\n", &rw, &addr) == 2) {	// Stay in the loop if fscanf() successfully parsed two tokens as specified.
-      if (rw == 'r') {
-         printf("r %x\n", addr);
+   //    if (rw == 'r') {
+   //       printf("r %x\n", addr);
          
-         // printf("%d\n", read_command(*L1.next_cache,addr));
-      }
-      else if (rw == 'w') {
-          printf("w %x\n", addr);
-      }
-      else {
-         printf("Error: Unknown request type %c.\n", rw);
-	 exit(EXIT_FAILURE);
-      }
+   //       // printf("%d\n", read_command(*L1.next_cache,addr));
+   //    }
+   //    else if (rw == 'w') {
+   //        printf("w %x\n", addr);
+   //    }
+   //    else {
+   //       printf("Error: Unknown request type %c.\n", rw);
+	//  exit(EXIT_FAILURE);
+   //    }
 
       ///////////////////////////////////////////////////////
       // Issue the request to the L1 cache instance here.

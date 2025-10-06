@@ -46,6 +46,14 @@ class Mem_Space {
       this->value = val;
       this->LRU = LRU_val;
    }
+
+   Mem_Space operator=(const Mem_Space& temp) {
+      this->dirty = temp.dirty;
+      this->valid = temp.valid;
+      this->value = temp.value;
+      this->valid = temp.valid;
+      return *this;
+   }
 };
 
 //Cache

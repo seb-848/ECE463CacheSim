@@ -40,6 +40,10 @@ int mem_traffic = 0;
 // int L2_write_back = 0;
 // int L2_prefetches = 0;
 
+bool compare_LRU(const Mem_Space &block1, const Mem_Space &block2) {
+      return block1.LRU < block2.LRU;
+    }
+
 void update_lru(Cache* LX, uint32_t index, int prev, uint32_t addr = 0) {
    if (prev < 0) {
       for (uint32_t i = 0; i < LX->ASSOC; i++) {
@@ -153,7 +157,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
       if (res_addr == address) {
          // find the LRU
          uint32_t MRU = find_MRU(LX, index);
-         uint32_t MRU_addr = LX->sets[index][MRU].value;
+         //uint32_t MRU_addr = LX->sets[index][MRU].value;
 
          if (read_write == READ_COM) {
             LX->sets[index][MRU].dirty = false;
@@ -176,7 +180,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
       else {
          LX->write_back++;
          //need to evict and clean
-         for (int i = 0; i < LX->ASSOC; i++) {
+         for (uint32_t i = 0; i < LX->ASSOC; i++) {
             if (LX->sets[index][i].value == res_addr) {
                // if (!LX->sets[index][i].dirty) {
                //    LX->sets[index][i].value = tag;
@@ -280,7 +284,7 @@ int main (int argc, char *argv[]) {
    //if (L1->next_cache == nullptr) printf("NULLPTR");
    //printf("%d\n%d\n%d\n",L2->BLOCKSIZE, L2->SIZE, L2->ASSOC);
 
-   if (params.L2_SIZE > 0) {
+   if (static_cast<int>(params.L2_SIZE) > 0) {
       
       // Cache L2 = Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);
       // printf("%d\n%d\n%d\n",L2.BLOCKSIZE, L2.SIZE, L2.ASSOC);
@@ -315,11 +319,13 @@ int main (int argc, char *argv[]) {
       read_command(L1,addr,rw);
     }
 
+    
+    Mem_Space* temp = new Mem_Space();
     printf("===== L1 contents =====\n");
-    for (int i = 0; i < L1->nums_sets; i++) {
-      sort(L1->sets[i].begin(), L1->sets[i].end());
+    for (uint32_t i = 0; i < L1->nums_sets; i++) {
+      sort(L1->sets[i].begin(), L1->sets[i].end(),compare_LRU);
       printf("set      %d:    ",i);
-      for (int j = 0; j < L1->ASSOC; j++) {
+      for (uint32_t j = 0; j < L1->ASSOC; j++) {
          printf("%d", L1->sets[i][j].value);
          if (L1->sets[i][j].dirty) {
             printf(" D");
@@ -331,10 +337,15 @@ int main (int argc, char *argv[]) {
 
     if (L2->SIZE > 0) {
       printf("\n===== L2 contents =====\n");
-      for (int i = 0; i < L2->nums_sets; i++) {
-         sort(L2->sets[i].begin(), L2->sets[i].end());
+      for (uint32_t i = 0; i < L2->nums_sets; i++) {
+         // for (uint32_t k = 1; k < L2->ASSOC; k++) {
+         //    if (L2->sets[i][k - 1].LRU > L2->sets[i][k].LRU) {
+         //       temp = L2->sets[]
+         //    }
+         // }
+         sort(L2->sets[i].begin(), L2->sets[i].end(), compare_LRU);
          printf("set      %d:    ", i);
-         for (int j = 0; j < L2->ASSOC; j++) {
+         for (uint32_t j = 0; j < L2->ASSOC; j++) {
             printf("%d", L2->sets[i][j].value);
             if (L2->sets[i][j].dirty) {
                printf(" D");

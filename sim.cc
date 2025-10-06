@@ -131,7 +131,8 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             LX->read++;
          }
          else {
-            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = true;
+            //if (LX->next_cache != nullptr) LX->sets[index][i].dirty = true;
+            LX->sets[index][i].dirty = true;
             LX->write++;
          }
          return address;

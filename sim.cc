@@ -477,15 +477,15 @@ int main (int argc, char *argv[]) {
 
     printf("h. L2 reads (demand):          %d\n", L2->read);
     printf("i. L2 read misses (demand):    %d\n", L2->read_miss);
-    printf("j. L2 reads (prefetch):        0.0000\n");
-    printf("k. L2 read misses (prefetch):  0.0000\n");
+    printf("j. L2 reads (prefetch):        0\n");
+    printf("k. L2 read misses (prefetch):  0\n");
     printf("l. L2 writes:                  %d\n", L2->write);
     printf("m. L2 write misses:            %d\n", L2->write_miss);
     if (L2->read > 0 || L2->write > 0) {
       printf("n. L2 miss rate:               %f\n", static_cast<float>(L2->read_miss + L2->write_miss)/(L2->read + L2->write));
     }
     else {
-      printf("n. L2 miss rate:               0\n");
+      printf("n. L2 miss rate:               0.0000\n");
     }
    //  printf("L2 miss rate: %.2d\n", (L2->read_miss + L2->write_miss)/(L2->read + L2->write));
     printf("o. L2 writebacks:              %d\n", L2->write_back);

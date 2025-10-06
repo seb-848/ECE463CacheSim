@@ -133,7 +133,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
             LX->read++;
          }
          else {
-            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = false;
+            if (LX->next_cache != nullptr) LX->sets[index][i].dirty = true;
             LX->write++;
          }
 
@@ -141,7 +141,7 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          // if (LX->next_cache != nullptr) {
          //    LX->sets[index][i].dirty = true;
          //    LX->sets[index][i].valid = true;
-         //    LX->sets[index][i].value = tag;
+         //LX->sets[index][i].value = tag;
          // }
          return address;
       }
@@ -160,12 +160,12 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
          //uint32_t MRU_addr = LX->sets[index][MRU].value;
 
          if (read_write == READ_COM) {
-            LX->sets[index][MRU].dirty = false;
+            //LX->sets[index][MRU].dirty = false;
             LX->read++;
             LX->read_miss++;
          }
          else {
-            LX->sets[index][MRU].dirty = true;
+            //LX->sets[index][MRU].dirty = true;
             LX->write++;
             LX->write_miss++;
          }
@@ -190,11 +190,11 @@ uint32_t read_command(Cache* LX, uint32_t address, char read_write) {
                // }
                if (read_write == READ_COM) {
                   LX->read++;
-                  LX->sets[index][i].dirty = false;
+                  //LX->sets[index][i].dirty = false;
                }
                else {
                   LX->write++;
-                  LX->sets[index][i].dirty = true;
+                  //LX->sets[index][i].dirty = true;
                }
 
                LX->sets[index][i].value = tag;

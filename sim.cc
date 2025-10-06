@@ -63,7 +63,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
       // L1 or L2 hit
       if (LX->sets[index][i].value == tag) {
          if (write_back) {
-            printf("L2_write back");
+            //printf("L2_write back");
             LX->sets[index][i].address = address;
             LX->sets[index][i].value = tag;
             LX->sets[index][i].dirty = true;

@@ -277,7 +277,7 @@ int main (int argc, char *argv[]) {
 
    Cache* L1 = new Cache(params.BLOCKSIZE, params.L1_SIZE, params.L1_ASSOC);
    //printf("%d\n%d\n%d\n",L1->BLOCKSIZE, L1->SIZE, L1->ASSOC);
-   if (L1->next_cache == nullptr) printf("NULLPTR");
+   //if (L1->next_cache == nullptr) printf("NULLPTR");
 
    Cache* L2 = new Cache();
    //Cache* L2 = new Cache(params.BLOCKSIZE, params.L2_SIZE, params.L2_ASSOC);

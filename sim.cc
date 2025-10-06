@@ -124,6 +124,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             LX->sets[index][i].dirty = true;
             return 1;
          }
+         LX->sets[index][i].LRU = 0;
          prev_lru = i;
          update_lru(LX, index, prev_lru);
          if (read_write == READ_COM) {

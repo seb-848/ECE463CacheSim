@@ -43,6 +43,7 @@ void update_lru(Cache* LX, uint32_t index, uint32_t prev, uint32_t addr) {
          flag++;
       }
    }
+   //sort(LX->sets[index].begin(), LX->sets[index].begin(), compare_LRU);
 }
 
 uint32_t find_MRU(Cache* LX, uint32_t index) {
@@ -82,6 +83,7 @@ uint32_t command(Cache* LX, uint32_t address, char read_write, bool write_back) 
             //if (LX->next_cache == nullptr) LX->read++;
             LX->sets[index][i].dirty = true;
             LX->sets[index][i].address = address;
+             LX->sets[index][i].value = tag;
 
             LX->write++;
          }

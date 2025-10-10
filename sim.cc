@@ -182,8 +182,19 @@ uint32_t find_MRU(Cache* LX, uint32_t index) {
 // }
 
 uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_back) {
-   uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
-   uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
+   uint32_t index = 0;
+   uint32_t tag = 0;
+   if (LX->nums_sets == 0) {
+      index = 0;
+      tag = address >> LX->nums_block_offset;
+   }
+   else 
+   {
+      index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
+      tag = address >> (LX->nums_index + LX->nums_block_offset);
+   }
+   //uint32_t index = (address >> LX->nums_block_offset) & ((1<< LX->nums_index) - 1);
+   //uint32_t tag = address >> (LX->nums_index + LX->nums_block_offset);
    uint32_t res_addr = address;
 
    for (uint32_t i = 0; i < LX->ASSOC; i++) {

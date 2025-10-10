@@ -110,8 +110,15 @@ class Cache {
          this->nums_block_offset = 0;
       } 
       else {
+         if (this->SIZE == this->ASSOC) {
+            this->nums_sets = 1;
+            this->nums_index = 0;
+         }
+         else {
          this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);
          this->nums_index = log2(nums_sets);
+         // this->nums_block_offset = log2(BLOCKSIZE);
+         }
          this->nums_block_offset = log2(BLOCKSIZE);
       }
       //this->nums_sets = (this->SIZE)/(this->ASSOC * this->BLOCKSIZE);

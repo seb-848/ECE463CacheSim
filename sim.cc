@@ -195,6 +195,7 @@ uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_ba
             LX->sets[index][i].dirty = true;
             LX->write++;
             //if (read_write != READ_COM) LX->write++;
+            update_lru(LX, index, LX->sets[index][i].LRU, LX->sets[index][i].value);
             return 1;
          }
          
@@ -288,7 +289,13 @@ uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_ba
       LX->write_miss++;
    }
 
-   if (LX->next_cache == nullptr) mem_traffic++;
+   if (LX->next_cache == nullptr) {
+      mem_traffic++;
+      // for (uint32_t i = 0; i < LX->ASSOC; i++) {
+      //    printf("LRU: %d  ||  TAG: %x  ||", LX->sets[index][i].LRU, LX->sets[index][i].value);
+      // }
+      // printf("\n");
+   }
 
    LX->sets[index][MRU].valid = true;
    LX->sets[index][MRU].value = tag;

@@ -265,12 +265,6 @@ uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_ba
          }
          
          update_lru(LX, index, LX->sets[index][MRU].LRU, LX->sets[index][MRU].value);
-         // printf("Inserted tag to L1\nShowing L2\n");
-         // printf("Index: %d  ", index);
-         // for (uint32_t i = 0; i < LX->next_cache->ASSOC; i++) {
-         //    printf("Tag: %x, LRU: %d ||",LX->next_cache->sets[index][i].value, LX->next_cache->sets[index][i].LRU);
-         // }
-         // printf("\n\n");
          return 1;
       }
    }
@@ -286,13 +280,11 @@ uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_ba
    }
 
    uint32_t MRU_addr = LX->sets[index][MRU].address;
-   //printf("L2 i think evicted address/tag:  tag: %x LRU: %d Dirty bit: %d\n", LX->sets[index][MRU].value, LX->sets[index][MRU].LRU, LX->sets[index][MRU].dirty);
 
    if (read_write == READ_COM) {
       LX->sets[index][MRU].dirty = false;
       LX->read++;
       LX->read_miss++;
-      //if (LX->next_cache != nullptr) LX->next_cache->write++;
    }
    else {
       LX->sets[index][MRU].dirty = true;
@@ -302,10 +294,6 @@ uint32_t command_new(Cache* LX, uint32_t address, char read_write, bool write_ba
 
    if (LX->next_cache == nullptr) {
       mem_traffic++;
-      // for (uint32_t i = 0; i < LX->ASSOC; i++) {
-      //    printf("LRU: %d  ||  TAG: %x  ||", LX->sets[index][i].LRU, LX->sets[index][i].value);
-      // }
-      // printf("\n");
    }
 
    LX->sets[index][MRU].valid = true;
